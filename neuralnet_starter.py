@@ -16,10 +16,8 @@ config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expre
 config['learning_rate'] = 0.0001 # Learning rate of gradient descent algorithm
 
 def softmax(x):
-  """
-  Write the code for softmax activation function that takes in a numpy array and returns a numpy array.
-  """
-  return output
+  e_x = np.exp(x)
+  return e_x / e_x.sum(axis=0)
 
 
 def load_data(fname):
