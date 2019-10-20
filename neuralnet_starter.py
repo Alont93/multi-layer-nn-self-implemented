@@ -152,10 +152,9 @@ class Neuralnetwork():
     return loss, self.y
 
   def loss_func(self, logits, targets):
-    '''
-    find cross entropy loss between logits and targets
-    '''
-    return output
+    amount_of_data = targets.shape[0]
+    return -np.sum(targets * np.log(logits)) / amount_of_data
+
     
   def backward_pass(self):
     '''
