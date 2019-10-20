@@ -113,6 +113,7 @@ class Layer():
     """
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
+    self.a = np.matmul(np.c_[self.b,self.w],x)  # Weighted sum of x with weight matrix(augmented with bias)
     self.x = x
     return self.a
   
@@ -121,6 +122,9 @@ class Layer():
     Write the code for backward pass. This takes in gradient from its next layer as input,
     computes gradient for its weights and the delta to pass to its previous layers.
     """
+    self.d_x = np.matmul(delta,np.transpose(np.c_[self.b,self.w]))
+    grad = np.matmul(delta,np.transpose(self.x))
+    self.d_b,self.d_w = np.split(grad,[1])
     return self.d_x
 
       
