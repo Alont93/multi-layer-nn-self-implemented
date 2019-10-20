@@ -67,25 +67,14 @@ class Activation:
     return grad * delta
       
   def sigmoid(self, x):
-    """
-    Write the code for sigmoid activation function that takes in a numpy array and returns a numpy array.
-    """
-    self.x = x
-    return output
+    e_x = np.exp(x)
+    return e_x / (e_x + 1)
 
   def tanh(self, x):
-    """
-    Write the code for tanh activation function that takes in a numpy array and returns a numpy array.
-    """
-    self.x = x
-    return output
+    return np.tanh(x)
 
   def ReLU(self, x):
-    """
-    Write the code for ReLU activation function that takes in a numpy array and returns a numpy array.
-    """
-    self.x = x
-    return output
+    return np.maximum(x, 0)
 
   def grad_sigmoid(self):
     """
