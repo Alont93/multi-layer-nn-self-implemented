@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pickle
 
 
@@ -22,11 +23,22 @@ def softmax(x):
 
 
 def load_data(fname):
-  """
-  Write code to read the data and return it as 2 numpy arrays.
-  Make sure to convert labels to one hot encoded format.
-  """
+  with open(fname, 'rb') as f:
+    data = pickle.load(f)
+
+  images = data[:,:-1]
+  labels = encode_onehot_labels(data[:,-1])
   return images, labels
+
+
+# parse the lables to sparse matrix
+def encode_onehot_labels(labels):
+    data_table = pd.DataFrame({'number': labels})
+    data_table = pd.concat((data_table, pd.get_dummies(data_table.number)), 1)
+    data_table = data_table.drop(columns=['number'])
+    relevant_labels = data_table.values
+    return relevant_labels
+
 
 
 class Activation:
