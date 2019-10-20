@@ -181,9 +181,9 @@ def test(model, X_test, y_test, config):
       
 
 if __name__ == "__main__":
-  train_data_fname = 'MNIST_train.pkl'
-  valid_data_fname = 'MNIST_valid.pkl'
-  test_data_fname = 'MNIST_test.pkl'
+  train_data_fname = 'data/MNIST_train.pkl'
+  valid_data_fname = 'data/MNIST_valid.pkl'
+  test_data_fname = 'data/MNIST_test.pkl'
   
   ### Train the network ###
   model = Neuralnetwork(config)
