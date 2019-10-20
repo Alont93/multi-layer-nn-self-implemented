@@ -184,10 +184,23 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
   
   
 def test(model, X_test, y_test, config):
-  """
-  Write code to run the model on the data passed as input and return accuracy.
-  """
-  return accuracy
+  nn = Neuralnetwork(config)
+
+  predictions = nn.forward_pass(X_test, y_test)
+  decisions = (predictions == predictions.max(axis=1)[:,None]).astype(np.int)
+
+  diff = y_test + decisions
+  AGREEMENT_VALUE = 2
+  diff[diff < AGREEMENT_VALUE] = 0
+  diff[diff == AGREEMENT_VALUE] = 1
+
+  number_of_images = X_test.shape[0]
+  return np.sum(diff) / number_of_images
+
+
+# calculate the specific weights accuracy
+def get_softmax_weights_accuracy(pca_images, labels, weights):
+
       
 
 if __name__ == "__main__":
