@@ -80,21 +80,15 @@ class Activation:
     return np.maximum(x, 0)
 
   def grad_sigmoid(self):
-    """
-    Write the code for gradient through sigmoid activation function that takes in a numpy array and returns a numpy array.
-    """
-    return grad
+    return self.sigmoid(self.x) * (1 - self.sigmoid(self.x))
 
   def grad_tanh(self):
-    """
-    Write the code for gradient through tanh activation function that takes in a numpy array and returns a numpy array.
-    """
-    return grad
+    return 1 - np.square(self.tanh(self.x))
 
   def grad_ReLU(self):
-    """
-    Write the code for gradient through ReLU activation function that takes in a numpy array and returns a numpy array.
-    """
+    grad = self.x.copy()
+    grad[grad <= 0] = 0
+    grad[grad > 0] = 1
     return grad
 
 
