@@ -67,13 +67,16 @@ class Activation:
     return grad * delta
       
   def sigmoid(self, x):
+    self.x = x
     e_x = np.exp(x)
     return e_x / (e_x + 1)
 
   def tanh(self, x):
+    self.x = x
     return np.tanh(x)
 
   def ReLU(self, x):
+    self.x = x
     return np.maximum(x, 0)
 
   def grad_sigmoid(self):
@@ -138,18 +141,41 @@ class Neuralnetwork():
     If targets == None, loss should be None. If not, then return the loss computed.
     """
     self.x = x
+    self.targets = targets
+
+    processed_x = x
+    for layer in self.layers:
+      processed_x = layer.forward_pass(processed_x)
+
+    self.y = softmax(processed_x)
+    if targets != None:
+      loss = self.loss_func(self.y, self.targets)
+
     return loss, self.y
 
   def loss_func(self, logits, targets):
     amount_of_data = targets.shape[0]
     return -np.sum(targets * np.log(logits)) / amount_of_data
 
-    
   def backward_pass(self):
-    '''
-    implement the backward pass for the whole network. 
-    hint - use previously built functions.
-    '''
+    # the gradient of cross-entropy on top of softmax is (t-y)
+    back_output = self.targets - self.y
+    weights_gradients = []
+
+    for layer in reversed(self.layers):
+      back_output = layer.backward_pass(back_output)
+      if isinstance(layer, Layer):
+        weights_gradients.append(layer.d_w)
+
+    # update weights with learning rule
+    for layer in self.layers:
+      if isinstance(layer, Layer):
+        alpha = config['learning_rate']
+        layer.w = layer.w - alpha * layer.d_w
+        layer.b = layer.b - alpha * layer.d_b
+
+    loss = self.loss_func(self.y, self.targets)
+    return loss, self.y
       
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
