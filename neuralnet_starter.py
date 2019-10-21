@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 import pickle
 
 
 config = {}
-config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
+# config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
+config['layer_specs'] = [784] + [100] * 50 + [10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'sigmoid' # Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 1000  # Number of training samples per batch to be passed to network
 config['epochs'] = 50  # Number of epochs to train the model
@@ -14,6 +16,8 @@ config['L2_penalty'] = 0  # Regularization constant
 config['momentum'] = False  # Denotes if momentum is to be applied or not
 config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expression
 config['learning_rate'] = 0.0001 # Learning rate of gradient descent algorithm
+
+RAISING_VALIDATION_ERROR_THRESHOLD = 5
 
 def softmax(x):
   e_x = np.exp(x)
@@ -174,28 +178,137 @@ class Neuralnetwork():
 
     loss = self.loss_func(self.y, self.targets)
     return loss, self.y
-      
+
+  def get_layers_weights_and_biases(self):
+      weights = []
+      biases = []
+
+      for layer in self.layers:
+          if isinstance(layer, Layer):
+              weights.append(layer.w)
+              biases.append(layer.b)
+
+      return np.array(weights), np.array(biases)
+
+  def apply_weights_and_biases_on_layers(self, weights, biases):
+      layer_index = 0
+      for layer in self.layers:
+          if isinstance(layer, Layer):
+              layer.w = weights[layer_index]
+              layer.b = biases[layer_index]
+              layer_index += 1
+
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
-  """
-  Write the code to train the network. Use values from config to set parameters
-  such as L2 penalty, number of epochs, momentum, etc.
-  """
-  
-  
+    best_weights, training_errors, validation_errors, training_accuracies, validation_accuracies\
+        = batch_stochastic_gradient_decent(model, X_train, y_train, X_valid, y_valid)
+
+    plot_train_and_validation_loss(training_errors, validation_errors)
+    plot_train_and_validation_accurecy(training_errors, validation_errors)
+
+
+def plot_train_and_validation_loss(training_errors, validation_errors):
+    plt.plot(training_errors, label="training loss")
+    plt.plot(validation_errors, label="validation loss")
+    plt.xlabel("number of epochs")
+    plt.ylabel("loss")
+    plt.title("Loss as a function of the number of epochs")
+    plt.legend()
+    plt.show()
+
+
+def plot_train_and_validation_accurecy(training_accurecies, validation_accurecies):
+    plt.plot(training_accurecies, label="training accurecy")
+    plt.plot(validation_accurecies, label="validation accurecy")
+    plt.xlabel("number of epochs")
+    plt.ylabel("accurecy")
+    plt.title("Accurecy as a function of the number of epochs")
+    plt.legend()
+    plt.show()
+
+
+# batch and stochastic gradient decent implementation for two classes
+def batch_stochastic_gradient_decent(nn, samples, labels, validation_samples, validation_labels):
+    training_errors = []
+    validation_errors = []
+    training_accuracies = []
+    validation_accuracies = []
+
+    best_validation_loss = float('inf')
+    current_weights, current_biases = nn.get_layers_weights_and_biases()
+    best_weights = current_weights
+
+    number_of_training_samples = samples.shape[0]
+    number_of_batch_in_epoch = number_of_training_samples / config['epochs']
+
+    for t in range(config['epochs']):
+        epoch_train_accuracies = []
+        epoch_train_errors = []
+
+        for i in range(number_of_batch_in_epoch):
+            batch_indices = np.random.shuffle(np.arange(number_of_training_samples))
+            batch_samples = samples[batch_indices]
+            batch_labels = labels[batch_indices]
+
+            batch_loss, predictions = nn.forward_pass(batch_samples, batch_labels)
+            # need to calculate the train loss and accuracy for each batch and then average it to ger the epochs
+            update_single_batch_loss_and_accuracy(batch_loss, predictions, batch_labels, epoch_train_accuracies, epoch_train_errors)
+
+            nn.backward_pass()
+            current_weights, current_biases = nn.get_layers_weights_and_biases()
+
+        update_train_loss_and_acuuracy(epoch_train_accuracies, epoch_train_errors, training_accuracies, training_errors)
+        current_validation_loss = update_validation_loss_and_accuracy(nn, validation_accuracies,
+                                                                      validation_errors, validation_labels,
+                                                                      validation_samples)
+
+        if best_validation_loss > current_validation_loss:
+            best_validation_loss = current_validation_loss
+            best_weights = current_weights
+
+    return best_weights, np.array(training_errors), np.array(validation_errors),\
+                         np.array(training_accuracies), np.array(validation_accuracies)
+
+
+def update_single_batch_loss_and_accuracy(batch_loss, predictions, batch_labels, epoch_train_accuracies, epoch_train_errors):
+    batch_accuracy = caclulate_accuracy_of_predictions(predictions, batch_labels)
+    epoch_train_errors.append(batch_loss)
+    epoch_train_accuracies.append(batch_accuracy)
+
+
+def update_validation_loss_and_accuracy(nn, validation_accuracies, validation_errors, validation_labels,
+                                        validation_samples):
+    validation_loss, predictions = nn.forward_pass(validation_samples, validation_labels)
+    validation_errors.append(validation_loss)
+    validation_accuracies.append(caclulate_accuracy_of_predictions(predictions, validation_labels))
+
+    return validation_loss
+
+
+def update_train_loss_and_acuuracy(epoch_train_accuracies, epoch_train_errors, training_accuracies, training_errors):
+    average_train_epoch_loss = np.average(np.array(epoch_train_errors))
+    training_errors.append(average_train_epoch_loss)
+    average_train_epoch_accuracy = np.average(np.array(epoch_train_accuracies))
+    training_accuracies.append(average_train_epoch_accuracy)
+
+
+def caclulate_accuracy_of_predictions(predictions, labels):
+    decisions = (predictions == predictions.max(axis=1)[:, None]).astype(np.int)
+
+    diff = labels + decisions
+    AGREEMENT_VALUE = 2
+    diff[diff < AGREEMENT_VALUE] = 0
+    diff[diff == AGREEMENT_VALUE] = 1
+
+    number_of_images = labels.shape[0]
+    return np.sum(diff) / number_of_images
+
+
 def test(model, X_test, y_test, config):
   nn = Neuralnetwork(config)
+  loss, predictions = nn.forward_pass(X_test, y_test)
+  return caclulate_accuracy_of_predictions(predictions, y_test)
 
-  predictions = nn.forward_pass(X_test, y_test)
-  decisions = (predictions == predictions.max(axis=1)[:,None]).astype(np.int)
-
-  diff = y_test + decisions
-  AGREEMENT_VALUE = 2
-  diff[diff < AGREEMENT_VALUE] = 0
-  diff[diff == AGREEMENT_VALUE] = 1
-
-  number_of_images = X_test.shape[0]
-  return np.sum(diff) / number_of_images
 
 
 # calculate the specific weights accuracy
@@ -204,9 +317,9 @@ def get_softmax_weights_accuracy(pca_images, labels, weights):
       
 
 if __name__ == "__main__":
-  train_data_fname = 'data/MNIST_train.pkl'
-  valid_data_fname = 'data/MNIST_valid.pkl'
-  test_data_fname = 'data/MNIST_test.pkl'
+  train_data_fname = 'MNIST_train.pkl'
+  valid_data_fname = 'MNIST_valid.pkl'
+  test_data_fname = 'MNIST_test.pkl'
   
   ### Train the network ###
   model = Neuralnetwork(config)
