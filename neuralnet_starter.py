@@ -9,7 +9,7 @@ config['layer_specs'] = [784, 100, 100, 10]  # The length of list denotes number
 # config['layer_specs'] = [784] + [100] * 50 + [10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'sigmoid' # Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 1000  # Number of training samples per batch to be passed to network
-config['epochs'] = 50  # Number of epochs to train the model
+config['epochs'] = 2  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
 config['L2_penalty'] = 0  # Regularization constant
@@ -61,13 +61,13 @@ class Activation:
   def backward_pass(self, delta):
     if self.activation_type == "sigmoid":
       grad = self.grad_sigmoid()
-    
+
     elif self.activation_type == "tanh":
       grad = self.grad_tanh()
-    
+
     elif self.activation_type == "ReLU":
       grad = self.grad_ReLU()
-    
+
     return grad * delta
       
   def sigmoid(self, x):
@@ -111,9 +111,9 @@ class Layer():
     """
     Write the code for forward pass through a layer. Do not apply activation function here.
     """
-    x_with_one_rows = np.hstack((np.ones((x.shape[0],1)),x))
+    x_with_one_rows = np.hstack((np.ones((x.shape[0], 1)), x))
     self.a = np.vstack((self.b,self.w)).T @ x_with_one_rows.T  # Weighted sum of x with weight matrix(augmented with bias)
-    self.x = x
+    self.x = x_with_one_rows
     return self.a.T
   
   def backward_pass(self, delta):
@@ -146,7 +146,7 @@ class Neuralnetwork():
         self.x = x
         self.targets = targets
 
-        processed_x = x
+        processed_x = x #np.hstack((np.ones((x.shape[0],1)),x))
         for layer in self.layers:
             processed_x = layer.forward_pass(processed_x)
 
@@ -166,9 +166,11 @@ class Neuralnetwork():
         weights_gradients = []
 
         for layer in reversed(self.layers):
-            back_output = layer.backward_pass(back_output)
             if isinstance(layer, Layer):
+                back_output = layer.backward_pass(back_output)
                 weights_gradients.append(layer.d_w)
+            else:
+                back_output = layer.backward_pass(back_output[:,1:])
 
         loss = self.loss_func(self.y, self.targets)
         return loss, self.y
@@ -245,24 +247,28 @@ def batch_stochastic_gradient_decent(nn, samples, labels, validation_samples, va
     best_biases = current_biases
 
     number_of_training_samples = samples.shape[0]
-    number_of_batch_in_epoch = int(np.ceil(number_of_training_samples / config['epochs']))
+    number_of_batch_in_epoch = int(np.ceil(number_of_training_samples / config['batch_size']))
 
     for t in range(config['epochs']):
+        print("running epoch number " + str(t))
         epoch_train_accuracies = []
         epoch_train_errors = []
 
         for i in range(number_of_batch_in_epoch):
+            print("running batch number " + str(i) + " out of " + str(number_of_batch_in_epoch))
             batch_indices = np.arange(number_of_training_samples)
             np.random.shuffle(batch_indices)
             batch_samples = samples[batch_indices]
             batch_labels = labels[batch_indices]
 
             batch_loss, predictions = nn.forward_pass(batch_samples, batch_labels)
+            print("finish forward")
 
             # need to calculate the train loss and accuracy for each batch and then average it to ger the epochs
             update_single_batch_loss_and_accuracy(batch_loss, predictions, batch_labels, epoch_train_accuracies, epoch_train_errors)
 
             nn.backward_pass()
+            print("finish backward")
             nn.update_weights_by_learning_rule()
 
             current_weights, current_biases = nn.get_layers_weights_and_biases()
