@@ -19,9 +19,19 @@ config['learning_rate'] = 0.0001 # Learning rate of gradient descent algorithm
 
 RAISING_VALIDATION_ERROR_THRESHOLD = 5
 
+
+def vectorized_softmax(x):
+    e_x = np.exp(x)
+    sum = np.sum(e_x, axis=0)
+    return e_x / sum
+
+
 def softmax(x):
-  e_x = np.exp(x)
-  return e_x / e_x.sum(axis=0)
+    result = np.zeros_like(x)
+    for i in range(x.shape[0]):
+        result[i] = vectorized_softmax(x[i])
+
+    return result
 
 
 def load_data(fname):
@@ -123,7 +133,7 @@ class Layer():
     """
     self.d_x = np.matmul(delta, np.vstack((self.b, self.w)).T)
     grad = delta.T @ self.x
-    self.d_b,self.d_w = np.split(grad.T,[1])
+    self.d_b, self.d_w = np.split(grad.T,[1])
     return self.d_x
 
       
@@ -146,18 +156,20 @@ class Neuralnetwork():
         self.x = x
         self.targets = targets
 
-        processed_x = x #np.hstack((np.ones((x.shape[0],1)),x))
+        processed_a = x # np.hstack((np.ones((x.shape[0],1)),x))
         for layer in self.layers:
-            processed_x = layer.forward_pass(processed_x)
+            processed_a = layer.forward_pass(processed_a)
 
-        self.y = softmax(processed_x)
+        self.y = softmax(processed_a)
         if targets is not None:
             loss = self.loss_func(self.y, self.targets)
 
         return loss, self.y
 
     def loss_func(self, logits, targets):
-        amount_of_data = targets.shape[0]
+        amount_of_data = logits.shape[0]
+        # TODO: remove it
+        logits[logits==0] = 0.00000000001
         return -np.sum(targets * np.log(logits)) / amount_of_data
 
     def backward_pass(self):
@@ -176,7 +188,7 @@ class Neuralnetwork():
         return loss, self.y
 
     def update_weights_by_learning_rule(self):
-        for layer in self.layers:
+        for layer in reversed(self.layers):
             if isinstance(layer, Layer):
                 alpha = config['learning_rate']
                 # TODO: add momentum and regularization
@@ -210,7 +222,7 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
         = batch_stochastic_gradient_decent(model, X_train, y_train, X_valid, y_valid)
 
     plot_train_and_validation_loss(training_errors, validation_errors)
-    plot_train_and_validation_accurecy(training_errors, validation_errors)
+    plot_train_and_validation_accurecy(training_accuracies, validation_accuracies)
 
 
 def plot_train_and_validation_loss(training_errors, validation_errors):
@@ -247,7 +259,8 @@ def batch_stochastic_gradient_decent(nn, samples, labels, validation_samples, va
     best_biases = current_biases
 
     number_of_training_samples = samples.shape[0]
-    number_of_batch_in_epoch = int(np.ceil(number_of_training_samples / config['batch_size']))
+    # TODO: return it to calulation
+    number_of_batch_in_epoch = 22 # int(np.ceil(number_of_training_samples / config['batch_size']))
 
     for t in range(config['epochs']):
         print("running epoch number " + str(t))
