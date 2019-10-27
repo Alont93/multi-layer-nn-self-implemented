@@ -7,7 +7,7 @@ config = {}
 config['layer_specs'] = [784, 50, 10]  # The length of list denotes number of hidden layers; each element denotes number of neurons in that layer; first element is the size of input layer, last element is the size of output layer.
 config['activation'] = 'tanh'  # Takes values 'sigmoid', 'tanh' or 'ReLU'; denotes activation function for hidden layers
 config['batch_size'] = 1000  # Number of training samples per batch to be passed to network
-config['epochs'] = 10  # Number of epochs to train the model
+config['epochs'] = 2  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
 config['L2_penalty'] = 0  # Regularization constant
@@ -154,34 +154,15 @@ class Neuralnetwork():
         return loss, self.y
 
     def loss_func(self, logits, targets):
-        return -np.sum(targets * np.log(logits))
+        return -np.sum(targets * np.log(logits))/logits.shape[0]
 
 
     def backward_pass(self):
         # the gradient of cross-entropy on top of softmax is (t-y)
-        back_output = self.targets - self.y
+        back_output = (self.targets - self.y)/self.y.shape[0]
 
         for layer in reversed(self.layers):
             back_output = layer.backward_pass(back_output)
-
-    def get_layers_weights_and_biases(self):
-        weights = []
-        biases = []
-
-        for layer in self.layers:
-            if isinstance(layer, Layer):
-                weights.append(layer.w)
-                biases.append(layer.b)
-
-        return weights, biases
-
-    def apply_weights_and_biases_on_layers(self, weights, biases):
-        layer_index = 0
-        for layer in self.layers:
-            if isinstance(layer, Layer):
-                layer.w = weights[layer_index]
-                layer.b = biases[layer_index]
-                layer_index += 1
 
 
 def trainer(model, X_train, y_train, X_valid, y_valid, config):
@@ -192,10 +173,10 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
     num_of_batches = int(np.ceil(number_of_training_samples / config['batch_size']))
 
     for n in range(int(config['epochs'])):
-        #all_indices = np.arange(X_train.shape[0])
-        #np.random.shuffle(all_indices)
-        #X_train = X_train[all_indices]
-        #y_train = y_train[all_indices]
+        all_indices = np.arange(X_train.shape[0])
+        np.random.shuffle(all_indices)
+        X_train = X_train[all_indices]
+        y_train = y_train[all_indices]
         print("epoch ", n)
 
         # For loop over mini batches
@@ -220,57 +201,6 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
 
             # Calculate validation loss and accuracy
             valid_loss, valid_pred = model.forward_pass(X_valid, y_valid)
-            #print("validation accur is", caclulate_accuracy_of_predictions(valid_pred, y_valid))
-
-   #training_errors, validation_errors, training_accuracies, validation_accuracies \
-    #    = batch_stochastic_gradient_decent(model, X_train, y_train, X_valid, y_valid)
-
-    #plot_train_and_validation_loss(training_errors, validation_errors)
-    #plot_train_and_validation_accuracy(training_accuracies, validation_accuracies)
-
-
-def plot_train_and_validation_loss(training_errors, validation_errors):
-    plt.plot(training_errors, label="training loss")
-    plt.plot(validation_errors, label="validation loss")
-    plt.xlabel("number of epochs")
-    plt.ylabel("loss")
-    plt.title("Loss as a function of the number of epochs")
-    plt.legend()
-    plt.show()
-
-
-# batch and stochastic gradient decent implementation for two classes
-def plot_train_and_validation_accuracy(training_accuracies, validation_accuracies):
-    plt.plot(training_accuracies, label="training accuracy")
-    plt.plot(validation_accuracies, label="validation accuracy")
-    plt.xlabel("number of epochs")
-    plt.ylabel("accuracy")
-    plt.title("Accuracy as a function of the number of epochs")
-    plt.legend()
-    plt.show()
-
-
-def update_single_batch_loss_and_accuracy(batch_loss, predictions, batch_labels, epoch_train_accuracies,
-                                          epoch_train_errors):
-    batch_accuracy = caclulate_accuracy_of_predictions(predictions, batch_labels)
-    epoch_train_errors.append(batch_loss)
-    epoch_train_accuracies.append(batch_accuracy)
-
-
-def update_validation_loss_and_accuracy(nn, validation_accuracies, validation_errors, validation_labels,
-                                        validation_samples):
-    validation_loss, predictions = nn.forward_pass(validation_samples, validation_labels)
-    validation_errors.append(validation_loss)
-    validation_accuracies.append(caclulate_accuracy_of_predictions(predictions, validation_labels))
-
-    return validation_loss
-
-
-def update_train_loss_and_acuuracy(epoch_train_accuracies, epoch_train_errors, training_accuracies, training_errors):
-    average_train_epoch_loss = np.average(np.array(epoch_train_errors))
-    training_errors.append(average_train_epoch_loss)
-    average_train_epoch_accuracy = np.average(np.array(epoch_train_accuracies))
-    training_accuracies.append(average_train_epoch_accuracy)
 
 
 def caclulate_accuracy_of_predictions(predictions, labels):
@@ -289,7 +219,7 @@ def test(model, X_test, y_test, config):
     loss, predictions = model.forward_pass(X_test, y_test)
     return caclulate_accuracy_of_predictions(predictions, y_test)
 
-# Part 2(b) comparison of w[i][j], b[0][k], with epsilon
+
 def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
     layer_names = ['input_to_hidden_layer', 'hidden_to_output_layer']
 
@@ -303,7 +233,6 @@ def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
 
     for layer in model.layers:
         if isinstance(layer, Layer):
-
             # Numerical operation on layer for w
             layer.w[i][j] -= epsilon
             minus_loss, _ = model.forward_pass(X_train, y_train)
@@ -345,7 +274,7 @@ if __name__ == "__main__":
     X_valid, y_valid = load_data(valid_data_fname)
     X_test, y_test = load_data(test_data_fname)
     trainer(model, X_train, y_train, X_valid, y_valid, config)
-    numerical_comparison(model, 1, 1, 1, 0.01, X_train, y_train)
+    numerical_comparison(model, 0, 0, 1, 0.01, X_train, y_train)
     test_acc = test(model, X_test, y_test, config)
     print("test accuracy is", test_acc)
 
