@@ -220,12 +220,14 @@ def test(model, X_test, y_test, config):
     return caclulate_accuracy_of_predictions(predictions, y_test)
 
 
-def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
+def numerical_comparison(model, i, j, m, n, k, epsilon, X_train, y_train):
     layer_names = ['input_to_hidden_layer', 'hidden_to_output_layer']
 
-    # Use to store numerical approximation and backward gradient for w
-    num_approx_w = []
-    back_grad_w = []
+    # Use to store numerical approximation and backward gradient for w1, w2
+    num_approx_w1 = []
+    back_grad_w1 = []
+    num_approx_w2 = []
+    back_grad_w2 = []
 
     # Use to store numerical approximation and backward gradient for d
     num_approx_d = []
@@ -233,15 +235,23 @@ def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
 
     for layer in model.layers:
         if isinstance(layer, Layer):
-            # Numerical operation on layer for w
+            # Numerical operation on layer for w1
             layer.w[i][j] -= epsilon
             minus_loss, _ = model.forward_pass(X_train, y_train)
             layer.w[i][j] += 2 * epsilon
             add_loss, _ = model.forward_pass(X_train, y_train)
-            num_approx_w.append((add_loss-minus_loss)/(epsilon * 2))
+            num_approx_w1.append((add_loss-minus_loss)/(epsilon * 2))
+            layer.w[i][j] -= epsilon
+
+            # Numerical operation on layer for w2
+            layer.w[m][n] -= epsilon
+            minus_loss, _ = model.forward_pass(X_train, y_train)
+            layer.w[m][n] += 2 * epsilon
+            add_loss, _ = model.forward_pass(X_train, y_train)
+            num_approx_w2.append((add_loss-minus_loss)/(epsilon * 2))
+            layer.w[m][n] -= epsilon
 
             # Numerical operation on layer for d
-            layer.w[i][j] -= epsilon
             layer.b[0][k] -= epsilon
             minus_loss, _ = model.forward_pass(X_train, y_train)
             layer.b[0][k] += 2 * epsilon
@@ -252,15 +262,20 @@ def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
             layer.b[0][k] -= epsilon
             model.forward_pass(X_train, y_train)
             model.backward_pass()
-            back_grad_w.append(-layer.d_w[i][j])
+            back_grad_w1.append(-layer.d_w[i][j])
+            back_grad_w2.append(-layer.d_w[m][n])
             back_grad_d.append(-layer.d_b[0][k])
 
     data_table = pd.DataFrame({'layer': layer_names,
-                               'num_ap_w': num_approx_w,
-                               'bp_grad_w': back_grad_w,
+                               'num_ap_w1': num_approx_w1,
+                               'bp_grad_w1': back_grad_w1,
+                               'num_ap_w2': num_approx_w2,
+                               'bp_grad_w2': back_grad_w2,
                                'num_ap_b': num_approx_d,
                                'bp_grad_b': back_grad_d})
+    data_table.to_csv('./part2b.csv')
     print(data_table)
+
 
 
 if __name__ == "__main__":
@@ -274,7 +289,7 @@ if __name__ == "__main__":
     X_valid, y_valid = load_data(valid_data_fname)
     X_test, y_test = load_data(test_data_fname)
     trainer(model, X_train, y_train, X_valid, y_valid, config)
-    numerical_comparison(model, 0, 0, 1, 0.01, X_train, y_train)
+    numerical_comparison(model, 0, 0, 0,1,1, 0.01, X_train, y_train)
     test_acc = test(model, X_test, y_test, config)
     print("test accuracy is", test_acc)
 
