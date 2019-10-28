@@ -11,10 +11,18 @@ We implement multi-layer neural network to classify the MNIST dataset in Python.
 ## Dataset
 We use the MNIST dataset for this neural network
 
-## Activation Functions
-We have softmax as our output activation function, and have
+## Activation
+The activation class is used to apply activation function to layer output. 
+The softmax activation function for the output layer is determined. We have
+
 * sigmoid,
 * ReLU,
 * tanh
-to be our activation functions for hidden layers.
 
+to be chosen from as our activation functions for hidden layers.
+
+## Layers
+The layers class keeps track of the input, weights, bias and their gradients of each layer.
+
+## Neuralnet
+The multi-layer neuralnet implemented with forward_pass and backward_pass with backpropagation.
