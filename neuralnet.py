@@ -27,13 +27,14 @@ config['batch_size'] = 1000  # Number of training samples per batch to be passed
 config['epochs'] = 300  # Number of epochs to train the model
 config['early_stop'] = True  # Implement early stopping or not
 config['early_stop_epoch'] = 5  # Number of epochs for which validation loss increases to be counted as overfitting
-config['L2_penalty'] = 0.001  # Regularization constant
+config['L2_penalty'] = 0  # Regularization constant
 config['momentum'] = True  # Denotes if momentum is to be applied or not
 config['momentum_gamma'] = 0.9  # Denotes the constant 'gamma' in momentum expression
 config['learning_rate'] = 0.08  # Learning rate of gradient descent algorithm
 
 """
 # 2d) Configuration
+config['L2_penalty'] = 0.001
 config['epochs'] = 140
 
 # 2e) Configuration
@@ -269,15 +270,12 @@ def trainer(model, X_train, y_train, X_valid, y_valid, config):
 
                         # Weights and bias update
                         d_w = layer.d_w * alpha + momentum * layer.prev_w
-                        layer.w = layer.w + d_w  # 2c), e), f) without regularization
-                        # layer.w = layer.w * (1 - alpha * penalty / batch_size) + d_w  # 2d) with regularization
+                        layer.w = layer.w * (1 - alpha * penalty / batch_size) + d_w
                         layer.prev_w = d_w
                         layer.b = layer.d_b * alpha
                     # Without momentum
                     else:
-                        layer.w = layer.w + layer.d_w  # 2c), e), f) without regularization
-                        # layer.w = layer.w * (1 - alpha * penalty / batch_size) + layer.d_w * alpha  # 2d) with regularization
-                        layer.b = layer.d_b * alpha
+                        layer.w = layer.w * (1 - alpha * penalty / batch_size) + layer.d_w * alpha
 
         # Calculate validation loss and accuracy
         valid_loss, valid_pred = model.forward_pass(X_valid, y_valid)
