@@ -398,7 +398,7 @@ def numerical_comparison(model, i, j, k, epsilon, X_train, y_train):
                                'bp_grad_w': back_grad_w,
                                'num_ap_b': num_approx_d,
                                'bp_grad_b': back_grad_d})
-    return data_table
+    data_table.to_csv('./part2b.csv')
 
 
 if __name__ == "__main__":
