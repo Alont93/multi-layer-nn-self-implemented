@@ -1,31 +1,12 @@
-# Multi-layer Neural Networks for MNIST Dataset
+# multi-layer-nn-self-implemented
+Classification of handwritten digits using neural network written with NumPy only
 
-We implement multi-layer neural network to classify the MNIST dataset in Python.
+Classification of MNIST dataset for handwritten digits using configurable NN assembled with hidden layer implemented with back propagation algorithms and three different activation functions.
 
-## Required Packages
-* NumPy
-* Pandas
-* Matplotlib
-* Pickle
-
-## Dataset
-We use the MNIST dataset for this neural network
-
-## Activation
-The activation class is used to apply activation function to layer output. 
-The softmax activation function for the output layer is determined. We have
-
-* sigmoid,
-* ReLU,
-* tanh
-
-to be chosen from as our activation functions for hidden layers.
-
-## Layer
-The layers class keeps track of the input, weights, bias and their gradients of each layer.
-
-## Neuralnet
-The multi-layer neuralnet implemented with forward_pass and backward_pass with backpropagation.
-
-## Main
-Unchanged from starter file. 
+This porject includes:
+* MNIST dataset encoding.
+* Configurably sized dense neural network implementations.
+* Sigmoid, ReLU and Tanh functions and derivations implementations.
+* Backpropagation based on derivation of loss made by us, using numerical approximation implementation.
+* Training using gradient descent with configurable learning rates and momentum.
+* Acuraccy visualizations.
